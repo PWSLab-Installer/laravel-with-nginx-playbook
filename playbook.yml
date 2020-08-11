@@ -96,7 +96,7 @@
 
     -   name: Applying replacement on CentOS
         lineinfile:
-            dest: ~/.ansible/roles/pwslab.php/vars/Debian.yml
+            dest: ~/.ansible/roles/pwslab.php/vars/RedHat.yml
             regexp: '^__php_webserver_daemon: '
             line: '__php_webserver_daemon: "nginx"'
             state: present
