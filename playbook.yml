@@ -1,0 +1,213 @@
+- hosts: localhost
+  connection: local
+  vars:
+    php_version: '7.4'
+    php_default_version_debian: '7.4'
+    # mysql_databases: 
+    #     - name: joomla
+    # mysql_users: 
+    #     - name: joomla
+    #       host: 127.0.0.1
+    #       password: joomla
+    #       priv: joomla.*:ALL
+
+    # php_memory_limit: "512M"
+    # php_upload_max_filesize: "256M"
+    # php_post_max_size: "256M"
+    # php_output_buffering: "Off"
+    # php_max_execution_time: "300"
+    # php_date_timezone: "UTC"
+
+    # joomla_version: 3-9-20
+    # joomla_dot_version: 3.9.20
+
+  tasks:
+    
+    -   name: Check the version of Release
+        command: hostnamectl
+        register: os_check
+        ignore_errors: yes
+
+    -   name: Fetch laravel Role
+        git:
+          repo: https://ro:xi1fg5juK1t9gJsUMJCw@pwslab.org/ansible/laravel-with-nginx.git
+          dest: /root/.ansible/roles/pwslab.laravel-with-nginx
+          version: master
+          force: yes
+    
+    -   name: Install Role NGINX
+        local_action: command ansible-galaxy install -f geerlingguy.nginx 
+
+    -   name: Install Role REMI
+        local_action: command ansible-galaxy install -f geerlingguy.repo-remi 
+
+    -   name: Install Role MYSQL
+        local_action: command ansible-galaxy install -f geerlingguy.mysql
+
+    -   name: Install Role PHP
+        local_action: command ansible-galaxy install -f geerlingguy.php
+
+    -   name: Install Role PHP-VERSIONS
+        local_action: command ansible-galaxy install -f geerlingguy.php-versions
+
+    -   name: Install Role Composer
+        local_action: command ansible-galaxy install -f geerlingguy.composer 
+
+    -   name: Check if Nginx is already installed
+        stat: path=/usr/sbin/nginx
+        register: nginx_exists
+
+    -   name: Check if PHP is already installed
+        stat: path=/usr/bin/php
+        register: php_exists
+
+    -   name: Check if MYSQL is already installed
+        stat: path=/usr/bin/mysql
+        register: mysql_exists
+
+    -   name: Applying role Nginx
+        command: mv ~/.ansible/roles/geerlingguy.nginx ~/.ansible/roles/pwslab.nginx
+        when: not nginx_exists.stat.exists
+        ignore_errors: yes
+
+    -   name: Applying role Composer
+        command: mv ~/.ansible/roles/geerlingguy.composer ~/.ansible/roles/pwslab.composer
+        ignore_errors: yes
+
+    -   name: Applying role PHP
+        command: mv ~/.ansible/roles/geerlingguy.php ~/.ansible/roles/pwslab.php
+        when: not php_exists.stat.exists
+        ignore_errors: yes
+
+    -   name: Applying role PHP-Versions
+        command: mv ~/.ansible/roles/geerlingguy.php-versions ~/.ansible/roles/pwslab.php-versions
+        when: not php_exists.stat.exists
+        ignore_errors: yes
+
+    -   name: Applying role REMI
+        command: mv ~/.ansible/roles/geerlingguy.repo-remi  ~/.ansible/roles/pwslab.repo-remi 
+        when: not php_exists.stat.exists
+        ignore_errors: yes
+
+    -   name: Applying role MYSQL
+        command: mv ~/.ansible/roles/geerlingguy.mysql ~/.ansible/roles/pwslab.mysql
+        when: not mysql_exists.stat.exists
+        ignore_errors: yes
+
+    -   name: Applying replacement on CentOS
+        lineinfile:
+            dest: ~/.ansible/roles/pwslab.php/vars/Debian.yml
+            regexp: '^__php_webserver_daemon: '
+            line: '__php_webserver_daemon: "nginx"'
+            state: present
+        when:
+          - os_check.stdout | regex_search("CentOS")
+    
+    -   name: Applying replacement on Ubuntu
+        lineinfile:
+            dest: ~/.ansible/roles/pwslab.php/vars/Debian.yml
+            regexp: '^__php_webserver_daemon: '
+            line: '__php_webserver_daemon: "nginx"'
+            state: present
+        when:
+          - os_check.stdout | regex_search("Ubuntu")
+
+    -   name: Installing NGINX
+        include_role:
+          name: pwslab.nginx
+        when: not nginx_exists.stat.exists
+    
+    -   name: Installing MYSQL
+        include_role:
+            name: pwslab.mysql
+        when: not mysql_exists.stat.exists
+
+    -   name: Installing Remi
+        include_role:
+            name: pwslab.repo-remi 
+        when: os_check.stdout | regex_search("CentOS")
+
+    -   name: Installing PHP-Versions
+        include_role:
+            name: pwslab.php-versions
+        when: 
+          - not php_exists.stat.exists
+          - not os_check.stdout | regex_search("CentOS Linux 8")
+
+    -   name: Installing PHP
+        include_role:
+            name: pwslab.php
+        when: not php_exists.stat.exists
+
+    -   name: Applying replacement on CentOS
+        lineinfile:
+            dest: /etc/php-fpm.d/www.conf
+            regexp: '^listen = '
+            line: 'listen = /var/run/php{{ php_version }}-fpm.sock'
+            state: present
+        when:
+          - os_check.stdout | regex_search("CentOS Linux 7")
+
+    -   name: Applying replacement on CentOS
+        lineinfile:
+            dest: /etc/php-fpm.d/www.conf
+            regexp: '^;listen.owner'
+            line: 'listen.owner = nginx'
+            state: present
+        when:
+          - os_check.stdout | regex_search("CentOS Linux 7")
+
+    -   name: Applying replacement on CentOS
+        lineinfile:
+            dest: /etc/php-fpm.d/www.conf
+            regexp: '^;listen.group'
+            line: 'listen.group = nginx'
+            state: present
+        when:
+          - os_check.stdout | regex_search("CentOS Linux 7")
+
+    -   name: Applying replacement on CentOS
+        lineinfile:
+            dest: /etc/php-fpm.d/www.conf
+            regexp: '^;listen.mode'
+            line: 'listen.mode = 0660'
+            state: present
+        when:
+          - os_check.stdout | regex_search("CentOS Linux 7")
+
+    -   name: Update php Version 
+        lineinfile:
+            dest: ~/.ansible/roles/pwslab.wlemp/templates/nginx.conf.j2
+            regexp: '^                fastcgi_pass unix:'
+            line: 'fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;'
+            state: present
+        when:
+          - os_check.stdout | regex_search("Ubuntu 20")
+
+    -   name: Update php Version 
+        lineinfile:
+            dest: ~/.ansible/roles/pwslab.wlemp/templates/nginx.conf.j2
+            regexp: '^                fastcgi_pass unix:'
+            line: 'fastcgi_pass unix:/var/run/php-fpm/www.sock;'
+            state: present
+        when:
+          - os_check.stdout | regex_search("CentOS Linux 8")
+
+    -   name: Update php Version 
+        lineinfile:
+            dest: ~/.ansible/roles/pwslab.wlemp/templates/nginx.conf.j2
+            regexp: '^                fastcgi_pass unix:'
+            line: 'fastcgi_pass unix:/var/run/php{{ php_version }}-fpm.sock;'
+            state: present
+        when:
+          - os_check.stdout | regex_search("CentOS Linux 7")
+
+    -   name: Installing Composer
+        include_role:
+            name: pwslab.composer
+
+    -   name: Installing laravel 
+        include_role:
+          name: pwslab.laravel-with-nginx
+      
+    
