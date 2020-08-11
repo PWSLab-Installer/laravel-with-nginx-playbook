@@ -110,13 +110,13 @@
             update_cache: yes 
             state: present
         loop: 
-            - php-mcrypt
+            # - php-mcrypt
             - curl
             - zlib
             - php-gd
             - php-mbstring
             - php-xml
-            - php-mysql
+            # - php-mysql
             - php-zip   
         when:
             - os_check.stdout | regex_search("CentOS Linux 8")

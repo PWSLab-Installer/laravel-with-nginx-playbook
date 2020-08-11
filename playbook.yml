@@ -202,6 +202,16 @@
         when:
           - os_check.stdout | regex_search("CentOS Linux 7")
 
+    -   name: Install PHP Json - CentOS 8
+        yum: 
+            name: "{{ item }}" 
+            update_cache: yes 
+            state: present
+        loop: 
+            - php-json  
+        when:
+            - os_check.stdout | regex_search("CentOS Linux 8")
+
     -   name: Installing Composer
         include_role:
             name: pwslab.composer
