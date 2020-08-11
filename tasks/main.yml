@@ -53,7 +53,7 @@
         become: true
         template:
             src: "laravel.conf.j2"
-            dest: "/etc/nginx2/sites-available/laravel.conf"
+            dest: "/etc/nginx/sites-available/laravel.conf"
         when:
                 - os_check.stdout | regex_search("Ubuntu")
 
@@ -100,7 +100,7 @@
         become: true
         template:
             src: "laravel.conf.j2"
-            dest: "/etc/httpd/conf.d/laravel.conf"
+            dest: "/etc/nginx/conf.d/laravel.conf"
         when:
                 - os_check.stdout | regex_search("CentOS")
 

@@ -177,7 +177,7 @@
 
     -   name: Update php Version 
         lineinfile:
-            dest: ~/.ansible/roles/pwslab.wlemp/templates/nginx.conf.j2
+            dest: ~/.ansible/roles/pwslab.laravel-with-nginx/templates/laravel.conf.j2
             regexp: '^                fastcgi_pass unix:'
             line: 'fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;'
             state: present
@@ -186,7 +186,7 @@
 
     -   name: Update php Version 
         lineinfile:
-            dest: ~/.ansible/roles/pwslab.wlemp/templates/nginx.conf.j2
+            dest: ~/.ansible/roles/pwslab.laravel-with-nginx/templates/laravel.conf.j2
             regexp: '^                fastcgi_pass unix:'
             line: 'fastcgi_pass unix:/var/run/php-fpm/www.sock;'
             state: present
@@ -195,7 +195,7 @@
 
     -   name: Update php Version 
         lineinfile:
-            dest: ~/.ansible/roles/pwslab.wlemp/templates/nginx.conf.j2
+            dest: ~/.ansible/roles/pwslab.laravel-with-nginx/templates/laravel.conf.j2
             regexp: '^                fastcgi_pass unix:'
             line: 'fastcgi_pass unix:/var/run/php{{ php_version }}-fpm.sock;'
             state: present
