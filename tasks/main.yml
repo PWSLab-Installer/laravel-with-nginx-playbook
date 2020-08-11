@@ -57,13 +57,11 @@
         when:
                 - os_check.stdout | regex_search("Ubuntu")
 
-    -   name: Enable Laravel config
-        command: a2ensite laravel.conf
-        when:
-            - os_check.stdout | regex_search("Ubuntu")
-
-    -   name: Disable default config
-        command: a2dissite 000-default.conf
+    -   name: Enable Laravel Conf
+        file:
+            src: "/etc/nginx/sites-available/laravel.conf"
+            dest: "/etc/nginx/sites-enabled/laravel.conf"
+            state: link
         when:
             - os_check.stdout | regex_search("Ubuntu")
 
@@ -97,10 +95,16 @@
             - os_check.stdout | regex_search("Ubuntu")
 
     -   name: Sets Nginx conf file - CentOS
-        become: true
         template:
             src: "laravel.conf.j2"
             dest: "/etc/nginx/conf.d/laravel.conf"
+        when:
+                - os_check.stdout | regex_search("CentOS")
+
+    -   name: Remove file (delete file)
+        file:
+            path: /etc/nginx/conf.d/default.conf
+            state: absent
         when:
                 - os_check.stdout | regex_search("CentOS")
 
@@ -149,26 +153,35 @@
         when:
             - os_check.stdout | regex_search("CentOS")
 
-    # -   name: Granting Permissions
-    #     file:
-    #         path: /var/www/laravel
-    #         recurse: yes
-    #         owner: www-data
-    #         mode: '0777'
-    #     when:
-    #         - os_check.stdout | regex_search("Ubuntu") 
+    -   name: Restart PHP-FPM
+        service:
+            name: php-fpm
+            state: restarted
+        when:
+            - os_check.stdout | regex_search("CentOS Linux 7")
 
-    # -   name: Granting Permissions
-    #     file:
-    #         path: /var/www/laravel
-    #         recurse: yes
-    #         owner: nginx
-    #         mode: '0777'
-    #     when:
-    #         - os_check.stdout | regex_search("CentOS") 
+    -   name: Granting Permissions
+        file:
+            path: /var/www/laravel
+            recurse: yes
+            group: www-data
+            owner: www-data
+            mode: '0755'
+        when:
+            - os_check.stdout | regex_search("Ubuntu") 
 
-    # -   name: Disable SELinux
-    #     selinux:
-    #         state: disabled
-    #     when:
-    #         - os_check.stdout | regex_search("CentOS") 
+    -   name: Granting Permissions
+        file:
+            path: /var/www/laravel
+            recurse: yes
+            group: nginx
+            owner: nginx
+            mode: '0755'
+        when:
+            - os_check.stdout | regex_search("CentOS") 
+
+    -   name: Disable SELinux
+        selinux:
+            state: disabled
+        when:
+            - os_check.stdout | regex_search("CentOS") 
